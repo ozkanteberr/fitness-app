@@ -6,20 +6,29 @@ import com.fitness.activityservice.model.Activity;
 import com.fitness.activityservice.repository.ActivityRepository;
 import com.fitness.activityservice.service.IActivityService;
 import com.fitness.activityservice.service.IUserValidationService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
+@RequiredArgsConstructor
 public class ActivityServiceImpl implements IActivityService {
 
     private final ActivityRepository activityRepository;
     private final IUserValidationService userValidationService;
-    public ActivityServiceImpl(ActivityRepository activityRepository,IUserValidationService userValidationService){
-        this.activityRepository=activityRepository;
-        this.userValidationService=userValidationService;
-    }
+    private final RabbitTemplate rabbitTemplate;
+
+    @Value("${rabbitmq.exchange.name}")
+    private String exchange;
+    @Value("${rabbitmq.routing.key}")
+    private String routingKey;
+
 
     @Override
     public ActivityResponse trackActivity(ActivityRequest request){
@@ -38,6 +47,14 @@ public class ActivityServiceImpl implements IActivityService {
                 .build();
 
         Activity savedActivity = activityRepository.save(activity);
+
+
+        try {
+            rabbitTemplate.convertAndSend(exchange,routingKey,savedActivity);
+        } catch (Exception e) {
+            log.error("Failed to publish activity to RabbitMQ : ",e);
+        }
+
         return mapToResponse(activity);
     }
 
