@@ -33,12 +33,25 @@ public class UserServiceImpl implements IUserService {
     public UserResponse register(RegisterRequest request){
 
         if(userRepository.existsByEmail((request.getEmail()))){
-            throw new RuntimeException("Email already exist!");
+            User existingUser = userRepository.findByEmail(request.getEmail());
+            UserResponse userResponse = new UserResponse();
+
+            userResponse.setId(existingUser.getId());
+            userResponse.setEmail(existingUser.getEmail());
+            userResponse.setPassword(existingUser.getPassword());
+            userResponse.setKeycloakId(existingUser.getKeycloakId());
+            userResponse.setFirstName(existingUser.getFirstName());
+            userResponse.setLastName(existingUser.getLastName());
+            userResponse.setCreatedAt(existingUser.getCreatedAt());
+            userResponse.setUpdatedAt(existingUser.getUpdatedAt());
+
+            return userResponse;
         }
 
         User user = new User();
         user.setEmail(request.getEmail());
         user.setPassword(request.getPassword());
+        user.setKeycloakId(request.getKeycloakId());
         user.setFirstName(request.getFirstName());
         user.setLastName(request.getLastName());
 
@@ -48,6 +61,7 @@ public class UserServiceImpl implements IUserService {
         userResponse.setId(savedUser.getId());
         userResponse.setEmail(savedUser.getEmail());
         userResponse.setPassword(savedUser.getPassword());
+        userResponse.setKeycloakId(savedUser.getKeycloakId());
         userResponse.setFirstName(savedUser.getFirstName());
         userResponse.setLastName(savedUser.getLastName());
         userResponse.setCreatedAt(savedUser.getCreatedAt());
@@ -58,7 +72,7 @@ public class UserServiceImpl implements IUserService {
 
     @Override
     public Boolean existByUserId(String userId){
-        return userRepository.existsById(userId);
+        return userRepository.existsByKeycloakId(userId);
     }
 
 }
